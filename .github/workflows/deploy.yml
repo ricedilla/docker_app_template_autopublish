@@ -1,0 +1,136 @@
+name: Deploy to Production
+
+on:
+  push:
+    branches: [ production ]  # Changed from 'deployment' to 'production'
+  workflow_dispatch: # Allow manual trigger
+
+env:
+  DEPLOY_HOST: ${{ secrets.DEPLOY_HOST }}
+  DEPLOY_USER: ${{ secrets.DEPLOY_USER }}
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Generate dynamic names
+      id: names
+      run: |
+        # Generate image name from GitHub repo: owner_repo (lowercase)
+        REPO_OWNER=$(echo "${{ github.repository_owner }}" | tr '[:upper:]' '[:lower:]' | sed 's/[^a-z0-9]/_/g')
+        REPO_NAME=$(echo "${{ github.event.repository.name }}" | tr '[:upper:]' '[:lower:]' | sed 's/[^a-z0-9]/_/g')
+        GENERATED_NAME="${REPO_OWNER}_${REPO_NAME}"
+        
+        # Check if CONTAINER_NAME is specified in host.config (override)
+        if grep -q "^CONTAINER_NAME=" deploy/host.config; then
+          CONTAINER_NAME=$(grep "^CONTAINER_NAME=" deploy/host.config | cut -d'=' -f2)
+        else
+          CONTAINER_NAME="$GENERATED_NAME"
+        fi
+        
+        echo "generated_name=$GENERATED_NAME" >> $GITHUB_OUTPUT
+        echo "container_name=$CONTAINER_NAME" >> $GITHUB_OUTPUT
+        echo "docker_image=$CONTAINER_NAME:latest" >> $GITHUB_OUTPUT
+        
+        echo "🏷️  Generated names:"
+        echo "  Repository: ${{ github.repository }}"
+        echo "  Generated: $GENERATED_NAME" 
+        echo "  Container: $CONTAINER_NAME"
+        echo "  Docker Image: $CONTAINER_NAME:latest"
+      
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v3
+      
+    - name: Build Docker image
+      run: |
+        cd src
+        docker build -t ${{ steps.names.outputs.docker_image }} .
+        docker save ${{ steps.names.outputs.docker_image }} > ../docker-image.tar
+        
+    - name: Read deployment config
+      id: config
+      run: |
+        # Parse host.config file
+        HOST=$(grep "^HOST=" deploy/host.config | cut -d'=' -f2)
+        PORT=$(grep "^PORT=" deploy/host.config | cut -d'=' -f2)
+        
+        echo "host=$HOST" >> $GITHUB_OUTPUT
+        echo "port=$PORT" >> $GITHUB_OUTPUT  
+        
+        echo "📋 Deployment config:"
+        echo "  Host: $HOST"
+        echo "  Port: $PORT"
+        echo "  Container: ${{ steps.names.outputs.container_name }}"
+        
+    - name: Deploy to server
+      uses: appleboy/ssh-action@v1.0.3
+      with:
+        host: ${{ env.DEPLOY_HOST }}
+        username: ${{ env.DEPLOY_USER }}
+        key: ${{ secrets.SSH_PRIVATE_KEY }}
+        script: |
+          # Create project directory
+          mkdir -p /home/rice/docker/sites/${{ steps.names.outputs.container_name }}
+          cd /home/rice/docker/sites/${{ steps.names.outputs.container_name }}
+          
+          # Stop existing container if running
+          docker-compose down 2>/dev/null || true
+          
+    - name: Copy files to server
+      uses: appleboy/scp-action@v0.1.7
+      with:
+        host: ${{ env.DEPLOY_HOST }}
+        username: ${{ env.DEPLOY_USER }}
+        key: ${{ secrets.SSH_PRIVATE_KEY }}
+        source: "docker-image.tar,deploy/docker-compose.yml,deploy/host.config"
+        target: "/home/rice/docker/sites/${{ steps.names.outputs.container_name }}/"
+        
+    - name: Load image and start container
+      uses: appleboy/ssh-action@v1.0.3
+      with:
+        host: ${{ env.DEPLOY_HOST }}
+        username: ${{ env.DEPLOY_USER }}
+        key: ${{ secrets.SSH_PRIVATE_KEY }}
+        script: |
+          cd /home/rice/docker/sites/${{ steps.names.outputs.container_name }}
+          
+          # Load Docker image
+          docker load < docker-image.tar
+          rm docker-image.tar
+          
+          # Start container with environment variables
+          cd deploy
+          export DOCKER_IMAGE="${{ steps.names.outputs.docker_image }}"
+          export CONTAINER_NAME="${{ steps.names.outputs.container_name }}"
+          export PORT="${{ steps.config.outputs.port }}"
+          
+          docker-compose up -d
+          
+          # Wait for container to be ready
+          sleep 10
+          
+    - name: Configure NPM proxy
+      uses: appleboy/ssh-action@v1.0.3
+      with:
+        host: ${{ env.DEPLOY_HOST }}
+        username: ${{ env.DEPLOY_USER }}
+        key: ${{ secrets.SSH_PRIVATE_KEY }}
+        script: |
+          cd /home/rice/docker/helper_scripts/core
+          
+          # Use npm_api_manager to create proxy host
+          python3 npm_api_manager.py create-proxy-host \
+            --domain "${{ steps.config.outputs.host }}" \
+            --forward-host "${{ steps.names.outputs.container_name }}" \
+            --forward-port "${{ steps.config.outputs.port }}" \
+            --ssl-enabled true \
+            --force-ssl true
+            
+          echo "🎉 Deployment complete!"
+          echo "📱 App available at: https://${{ steps.config.outputs.host }}"
+          echo "🐳 Container: ${{ steps.names.outputs.container_name }}"
+          echo "🏷️  Image: ${{ steps.names.outputs.docker_image }}"

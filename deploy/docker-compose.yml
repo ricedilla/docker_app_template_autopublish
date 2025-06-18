@@ -1,0 +1,14 @@
+version: '3.8'
+services:
+  app:
+    image: ${DOCKER_IMAGE:-example-app:latest}
+    container_name: ${CONTAINER_NAME:-example-app}
+    ports:
+      - "${PORT:-3000}:${PORT:-3000}"
+    networks:
+      - proxy-network
+    restart: unless-stopped
+
+networks:
+  proxy-network:
+    external: true
