@@ -127,12 +127,12 @@ jobs:
           cd /home/rice/docker/helper_scripts/core
           
           # Use npm_api_manager to create proxy host
-          python3 npm_api_manager.py create-proxy-host \
-            --domain "${{ steps.config.outputs.host }}" \
-            --forward-host "${{ steps.names.outputs.container_name }}" \
-            --forward-port "${{ steps.config.outputs.port }}" \
-            --ssl-enabled true \
-            --force-ssl true
+          python3 npm_api_manager.py add-site \
+            "${{ steps.config.outputs.host }}" \
+            "${{ steps.names.outputs.container_name }}" \
+            --port "${{ steps.config.outputs.port }}" \
+            --ssl \
+            --force-ssl
             
           echo "🎉 Deployment complete!"
           echo "📱 App available at: https://${{ steps.config.outputs.host }}"
