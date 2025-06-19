@@ -79,7 +79,7 @@ jobs:
           cd /home/rice/docker/sites/${{ steps.names.outputs.container_name }}
           
           # Stop existing container if running
-          docker-compose down 2>/dev/null || true
+          docker compose down 2>/dev/null || true
           
     - name: Copy files to server
       uses: appleboy/scp-action@v0.1.7
@@ -111,7 +111,7 @@ jobs:
           export CONTAINER_NAME="${{ steps.names.outputs.container_name }}"
           export PORT="${{ steps.config.outputs.port }}"
           
-          docker-compose up -d
+          docker compose up -d
           
           # Wait for container to be ready
           sleep 10
