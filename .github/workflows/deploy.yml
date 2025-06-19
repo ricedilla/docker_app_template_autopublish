@@ -72,6 +72,7 @@ jobs:
         host: ${{ env.DEPLOY_HOST }}
         username: ${{ env.DEPLOY_USER }}
         key: ${{ secrets.SSH_PRIVATE_KEY }}
+        port: 2222
         script: |
           # Create project directory
           mkdir -p /home/rice/docker/sites/${{ steps.names.outputs.container_name }}
@@ -86,6 +87,7 @@ jobs:
         host: ${{ env.DEPLOY_HOST }}
         username: ${{ env.DEPLOY_USER }}
         key: ${{ secrets.SSH_PRIVATE_KEY }}
+        port: 2222
         source: "docker-image.tar,deploy/docker-compose.yml,deploy/host.config"
         target: "/home/rice/docker/sites/${{ steps.names.outputs.container_name }}/"
         
@@ -95,6 +97,7 @@ jobs:
         host: ${{ env.DEPLOY_HOST }}
         username: ${{ env.DEPLOY_USER }}
         key: ${{ secrets.SSH_PRIVATE_KEY }}
+        port: 2222
         script: |
           cd /home/rice/docker/sites/${{ steps.names.outputs.container_name }}
           
@@ -119,6 +122,7 @@ jobs:
         host: ${{ env.DEPLOY_HOST }}
         username: ${{ env.DEPLOY_USER }}
         key: ${{ secrets.SSH_PRIVATE_KEY }}
+        port: 2222
         script: |
           cd /home/rice/docker/helper_scripts/core
           
