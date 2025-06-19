@@ -1,52 +1,93 @@
-# Scripts Directory
+# Scripts Documentation
 
-## setup-secrets.sh
+This directory contains utility scripts for deployment automation and troubleshooting.
 
-Automatically configures GitHub repository secrets for deployment using GitHub CLI.
+## 📁 Scripts Overview
 
-### Usage
+### 🔑 `setup-secrets.sh`
+**Purpose**: Automate GitHub secrets configuration for deployment
 
-1. **Create configuration file:**
-   ```bash
-   cp deploy-secrets.conf.example deploy-secrets.conf
-   ```
+**Features:**
+- ✨ **Non-interactive setup** - No prompts, reads from config file
+- 🎯 **Auto-repo detection** - Finds GitHub repo automatically  
+- 🔒 **Secure secret management** - Pushes secrets to GitHub safely
+- 🚀 **Workflow enablement** - Enables GitHub Actions for forks
+- 📋 **Validation** - Checks all prerequisites before setup
 
-2. **Edit the configuration file:**
-   ```bash
-   nano deploy-secrets.conf
-   ```
-   
-   Fill in your deployment details:
-   - `DEPLOY_HOST`: Deployment server hostname/IP (e.g., `subdomain.roca.tools`)
-   - `DEPLOY_USER`: SSH username (typically 'rice')
-   - `SSH_PRIVATE_KEY_FILE`: Path to your SSH private key file
-   - OR `SSH_PRIVATE_KEY`: Direct private key content
+**Usage:**
+```bash
+# 1. Copy and customize configuration
+cp deploy-secrets.conf.example deploy-secrets.conf
+nano deploy-secrets.conf
 
-3. **Run the setup script:**
-   ```bash
-   ./setup-secrets.sh
-   ```
+# 2. Run setup
+./setup-secrets.sh
+```
 
-The script will:
-- ✅ Check GitHub CLI installation and authentication
-- ✅ Read configuration from `deploy-secrets.conf`
-- ✅ Set GitHub repository secrets automatically
-- ✅ Enable GitHub Actions workflows (if possible)
-- ✅ No interactive prompts - fully automated!
+**Configuration File**: `deploy-secrets.conf`
+```bash
+# Server connection details
+DEPLOY_HOST=your-server.roca.tools
+DEPLOY_USER=rice
 
-**Note for Forked Repositories**: GitHub automatically disables workflows on forks for security. The script attempts to enable them automatically, but you may need to manually enable workflows by visiting your repository's Actions tab and clicking "I understand my workflows, go ahead and enable them".
+# GitHub personal access token (with repo and workflow permissions)
+GITHUB_TOKEN=ghp_your_token_here
 
-### Required GitHub Secrets
+# SSH private key (base64 encoded)
+SSH_PRIVATE_KEY_BASE64=LS0tLS1CR...your_key_here...
+```
 
-The script sets these secrets for deployment:
-- `DEPLOY_HOST` - Deployment server hostname/IP (where to SSH for deployment)
-- `DEPLOY_USER` - SSH username for server access  
-- `SSH_PRIVATE_KEY` - SSH private key for server authentication
+### 🐛 `debug-npm.sh`
+**Purpose**: Diagnose Nginx Proxy Manager (NPM) authentication and connectivity issues
 
-**Note:** `DEPLOY_HOST` is the server you SSH into for deployment, while `HOST` in `deploy/host.config` is the public domain where your app will be accessible (e.g., `my-app.roca.tools`).
+**Features:**
+- 🌐 **Connectivity testing** - Verifies NPM host accessibility
+- 🔐 **Authentication testing** - Tests NPM API login
+- 📊 **Detailed diagnostics** - Shows response codes and errors
+- 💡 **Troubleshooting tips** - Provides actionable suggestions
 
-### Security Notes
+**Usage:**
+```bash
+# Run on deployment server
+./debug-npm.sh
+```
 
-- `deploy-secrets.conf` is automatically ignored by git
-- Never commit your private key or configuration file
-- Keep your SSH private key secure and accessible only to you
+### 📋 `deploy-secrets.conf.example`
+**Purpose**: Template configuration file for secret setup
+
+---
+
+## 🔧 Troubleshooting Guide
+
+### GitHub Secrets Setup Issues
+
+**Problem**: Authentication or workflow trigger issues
+**Solutions:**
+1. **Check token permissions**: Token needs `repo` and `workflow` scopes
+2. **Enable Actions on forks**: Go to repository Settings → Actions → Enable
+3. **Manual trigger**: Use "Run workflow" button in Actions tab
+
+### NPM Authentication Issues
+
+**Problem**: NPM returns 401 authentication error
+**Solutions:**
+1. **Check credentials**: Verify NPM email/password in server `.env` file
+2. **Test manual login**: Log into NPM web interface with same credentials  
+3. **Run debug script**: `./debug-npm.sh` for detailed diagnostics
+
+### Deployment Issues
+
+**Problem**: Container fails to start or app not accessible
+**Solutions:**
+1. **Check logs**: View container logs and GitHub Actions logs
+2. **Platform mismatch**: Ensure Docker image matches server architecture (ARM64/AMD64)
+3. **NPM proxy**: Ensure reverse proxy is configured correctly
+4. **Container status**: Verify container is running and healthy
+
+---
+
+## 📚 Related Documentation
+
+- **[../README.md](../README.md)** - Main project documentation
+- **[../USER_GUIDE.md](../USER_GUIDE.md)** - Complete setup guide
+- **[../deploy/README.md](../deploy/README.md)** - Deployment configuration
