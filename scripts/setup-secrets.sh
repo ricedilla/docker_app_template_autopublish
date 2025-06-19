@@ -117,10 +117,27 @@ echo ""
 echo "🔄 Enabling GitHub Actions workflows..."
 if gh api repos/"$REPO_FULL"/actions/permissions --method PUT --field enabled=true --field allowed_actions=all >/dev/null 2>&1; then
     echo "✅ GitHub Actions enabled successfully"
+    
+    # Wait a moment for GitHub to process the changes
+    echo "⏳ Waiting for GitHub to process changes..."
+    sleep 5
+    
+    # Check if workflows are now recognized
+    WORKFLOW_COUNT=$(gh api repos/"$REPO_FULL"/actions/workflows --jq '.total_count' 2>/dev/null || echo "0")
+    if [ "$WORKFLOW_COUNT" -gt 0 ]; then
+        echo "✅ Workflow files detected and ready"
+    else
+        echo "⚠️  Workflows not yet detected. This is normal for new forks."
+        echo "   GitHub may take a few minutes to process workflow files."
+        echo "   If deployment doesn't work, visit:"
+        echo "   https://github.com/$REPO_FULL/actions"
+        echo "   and click 'I understand my workflows, go ahead and enable them'"
+    fi
 else
     echo "⚠️  Could not enable GitHub Actions automatically"
     echo "   Please enable them manually in your repository:"
     echo "   https://github.com/$REPO_FULL/actions"
+    echo "   Click 'I understand my workflows, go ahead and enable them'"
 fi
 
 echo ""

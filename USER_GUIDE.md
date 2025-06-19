@@ -49,6 +49,18 @@ Add these **Repository Secrets**:
 | `DEPLOY_USER` | SSH username | `rice` |
 | `SSH_PRIVATE_KEY` | Private key from admin | `-----BEGIN RSA PRIVATE KEY-----...` |
 
+**🚀 Automated Setup**: Use the included script to set up secrets automatically:
+```bash
+cd scripts
+cp deploy-secrets.conf.example deploy-secrets.conf
+# Edit deploy-secrets.conf with your values
+./setup-secrets.sh
+```
+
+**📋 Enable Workflows**: For forked repositories, you may need to manually enable GitHub Actions:
+1. Go to your repository's **Actions** tab
+2. Click **"I understand my workflows, go ahead and enable them"**
+
 ### 3. Customize Your App
 ```javascript
 // src/server.js - Your app code

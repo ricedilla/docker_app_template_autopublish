@@ -31,7 +31,10 @@ The script will:
 - ✅ Check GitHub CLI installation and authentication
 - ✅ Read configuration from `deploy-secrets.conf`
 - ✅ Set GitHub repository secrets automatically
+- ✅ Enable GitHub Actions workflows (if possible)
 - ✅ No interactive prompts - fully automated!
+
+**Note for Forked Repositories**: GitHub automatically disables workflows on forks for security. The script attempts to enable them automatically, but you may need to manually enable workflows by visiting your repository's Actions tab and clicking "I understand my workflows, go ahead and enable them".
 
 ### Required GitHub Secrets
 
