@@ -126,6 +126,14 @@ jobs:
         script: |
           cd /home/rice/docker/helper_scripts/core
           
+          # Load NPM credentials from setup/.env file
+          if [ -f "../setup/.env" ]; then
+            source ../setup/.env
+            echo "✅ Loaded NPM credentials from setup/.env"
+          else
+            echo "⚠️  NPM credentials file not found at ../setup/.env"
+          fi
+          
           # Use npm_api_manager to create proxy host
           python3 npm_api_manager.py add-site \
             "${{ steps.config.outputs.host }}" \
