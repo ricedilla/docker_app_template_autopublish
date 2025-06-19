@@ -7,7 +7,7 @@ How to fork the template and deploy to the shared server.
 ### 1. Generate Shared Deployment Key **ON THE SERVER**
 ```bash
 # SSH into your deployment server first
-ssh rice@your-server.com
+ssh rice@subdomain.roca.tools
 
 # Then on the server, generate the key:
 ssh-keygen -t rsa -b 4096 -f ~/.ssh/team_deploy -N ""
@@ -21,7 +21,7 @@ cat ~/.ssh/team_deploy
 
 ### 2. Share Server Access Details
 Your team needs these details to add as GitHub Secrets:
-- **Server IP/hostname**: `your-server.com` (or IP address)
+- **Server IP/hostname**: `subdomain.roca.tools` (or IP address)
 - **SSH username**: `rice` (or whatever user runs Docker)
 - **SSH private key**: Contents of `~/.ssh/team_deploy` (from the server)
 
@@ -45,9 +45,21 @@ Add these **Repository Secrets**:
 
 | Secret Name | Value | Example |
 |-------------|-------|---------|
-| `DEPLOY_HOST` | Server IP/hostname | `your-server.com` |
+| `DEPLOY_HOST` | Server IP/hostname | `subdomain.roca.tools` |
 | `DEPLOY_USER` | SSH username | `rice` |
 | `SSH_PRIVATE_KEY` | Private key from admin | `-----BEGIN RSA PRIVATE KEY-----...` |
+
+**🚀 Automated Setup**: Use the included script to set up secrets automatically:
+```bash
+cd scripts
+cp deploy-secrets.conf.example deploy-secrets.conf
+# Edit deploy-secrets.conf with your values
+./setup-secrets.sh
+```
+
+**📋 Enable Workflows**: For forked repositories, you may need to manually enable GitHub Actions:
+1. Go to your repository's **Actions** tab
+2. Click **"I understand my workflows, go ahead and enable them"**
 
 ### 3. Customize Your App
 ```javascript
@@ -72,7 +84,13 @@ PORT=3000
 ```bash
 git add .
 git commit -m "My awesome app ready for deployment"
-git push origin production  # 👈 This triggers deployment!
+
+# Create and push to production branch (first time only)
+git checkout -b production
+git push -u origin production
+
+# For subsequent deployments, just push to production:
+# git push origin production
 ```
 
 ### 5. Done! 🎉

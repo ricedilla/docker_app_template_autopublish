@@ -48,7 +48,8 @@ jobs:
     - name: Build Docker image
       run: |
         cd src
-        docker build -t ${{ steps.names.outputs.docker_image }} .
+        # Build for ARM64 platform (server architecture)
+        docker buildx build --platform linux/arm64 -t ${{ steps.names.outputs.docker_image }} --load .
         docker save ${{ steps.names.outputs.docker_image }} > ../docker-image.tar
         
     - name: Read deployment config
@@ -72,13 +73,14 @@ jobs:
         host: ${{ env.DEPLOY_HOST }}
         username: ${{ env.DEPLOY_USER }}
         key: ${{ secrets.SSH_PRIVATE_KEY }}
+        port: 2222
         script: |
           # Create project directory
           mkdir -p /home/rice/docker/sites/${{ steps.names.outputs.container_name }}
           cd /home/rice/docker/sites/${{ steps.names.outputs.container_name }}
           
           # Stop existing container if running
-          docker-compose down 2>/dev/null || true
+          docker compose down 2>/dev/null || true
           
     - name: Copy files to server
       uses: appleboy/scp-action@v0.1.7
@@ -86,6 +88,7 @@ jobs:
         host: ${{ env.DEPLOY_HOST }}
         username: ${{ env.DEPLOY_USER }}
         key: ${{ secrets.SSH_PRIVATE_KEY }}
+        port: 2222
         source: "docker-image.tar,deploy/docker-compose.yml,deploy/host.config"
         target: "/home/rice/docker/sites/${{ steps.names.outputs.container_name }}/"
         
@@ -95,6 +98,7 @@ jobs:
         host: ${{ env.DEPLOY_HOST }}
         username: ${{ env.DEPLOY_USER }}
         key: ${{ secrets.SSH_PRIVATE_KEY }}
+        port: 2222
         script: |
           cd /home/rice/docker/sites/${{ steps.names.outputs.container_name }}
           
@@ -108,7 +112,7 @@ jobs:
           export CONTAINER_NAME="${{ steps.names.outputs.container_name }}"
           export PORT="${{ steps.config.outputs.port }}"
           
-          docker-compose up -d
+          docker compose up -d
           
           # Wait for container to be ready
           sleep 10
@@ -119,16 +123,25 @@ jobs:
         host: ${{ env.DEPLOY_HOST }}
         username: ${{ env.DEPLOY_USER }}
         key: ${{ secrets.SSH_PRIVATE_KEY }}
+        port: 2222
         script: |
           cd /home/rice/docker/helper_scripts/core
           
+          # Load NPM credentials from setup/.env file
+          if [ -f "../setup/.env" ]; then
+            source ../setup/.env
+            echo "✅ Loaded NPM credentials from setup/.env"
+          else
+            echo "⚠️  NPM credentials file not found at ../setup/.env"
+          fi
+          
           # Use npm_api_manager to create proxy host
-          python3 npm_api_manager.py create-proxy-host \
-            --domain "${{ steps.config.outputs.host }}" \
-            --forward-host "${{ steps.names.outputs.container_name }}" \
-            --forward-port "${{ steps.config.outputs.port }}" \
-            --ssl-enabled true \
-            --force-ssl true
+          python3 npm_api_manager.py add-site \
+            "${{ steps.config.outputs.host }}" \
+            "${{ steps.names.outputs.container_name }}" \
+            --port "${{ steps.config.outputs.port }}" \
+            --ssl \
+            --force-ssl
             
           echo "🎉 Deployment complete!"
           echo "📱 App available at: https://${{ steps.config.outputs.host }}"
