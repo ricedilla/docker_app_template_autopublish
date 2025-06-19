@@ -112,6 +112,17 @@ echo "✅ Set DEPLOY_USER: $DEPLOY_USER"
 echo "$SSH_PRIVATE_KEY" | gh secret set SSH_PRIVATE_KEY --repo "$REPO_FULL"
 echo "✅ Set SSH_PRIVATE_KEY: [HIDDEN]"
 
+# Enable GitHub Actions workflows (in case they're disabled on fork)
+echo ""
+echo "🔄 Enabling GitHub Actions workflows..."
+if gh api repos/"$REPO_FULL"/actions/permissions --method PUT --field enabled=true --field allowed_actions=all >/dev/null 2>&1; then
+    echo "✅ GitHub Actions enabled successfully"
+else
+    echo "⚠️  Could not enable GitHub Actions automatically"
+    echo "   Please enable them manually in your repository:"
+    echo "   https://github.com/$REPO_FULL/actions"
+fi
+
 echo ""
 echo "🎉 GitHub secrets configured successfully!"
 echo ""

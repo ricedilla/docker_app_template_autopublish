@@ -55,7 +55,13 @@ PORT=3000
 ```bash
 git add .
 git commit -m "My awesome app"
-git push origin production  # 👈 This triggers deployment!
+
+# Create and push to production branch (first time only)
+git checkout -b production
+git push -u origin production
+
+# For subsequent deployments:
+# git push origin production
 ```
 
 **Result:** Your app is live at `https://my-awesome-app.roca.tools` 🎉
