@@ -127,11 +127,31 @@ if gh api repos/"$REPO_FULL"/actions/permissions --method PUT --field enabled=tr
     if [ "$WORKFLOW_COUNT" -gt 0 ]; then
         echo "✅ Workflow files detected and ready"
     else
-        echo "⚠️  Workflows not yet detected. This is normal for new forks."
-        echo "   GitHub may take a few minutes to process workflow files."
-        echo "   If deployment doesn't work, visit:"
-        echo "   https://github.com/$REPO_FULL/actions"
-        echo "   and click 'I understand my workflows, go ahead and enable them'"
+        echo "🔧 Workflows not detected, attempting to trigger recognition..."
+        
+        # Sometimes GitHub needs a workflow file change to recognize them
+        # Add a comment to the deploy workflow to trigger recognition
+        cd ..
+        if [ -f ".github/workflows/deploy.yml" ]; then
+            echo "# Updated by setup-secrets.sh on $(date)" >> .github/workflows/deploy.yml
+            git add .github/workflows/deploy.yml
+            git commit -m "Update workflow to trigger GitHub Actions recognition" >/dev/null 2>&1
+            git push origin main >/dev/null 2>&1
+            
+            echo "⏳ Waiting for GitHub to recognize updated workflow..."
+            sleep 10
+            
+            # Check again
+            WORKFLOW_COUNT=$(gh api repos/"$REPO_FULL"/actions/workflows --jq '.total_count' 2>/dev/null || echo "0")
+            if [ "$WORKFLOW_COUNT" -gt 0 ]; then
+                echo "✅ Workflows now recognized successfully!"
+            else
+                echo "⚠️  Workflows still not detected. Manual intervention needed."
+                echo "   Please visit: https://github.com/$REPO_FULL/actions"
+                echo "   and click 'I understand my workflows, go ahead and enable them'"
+            fi
+        fi
+        cd scripts
     fi
 else
     echo "⚠️  Could not enable GitHub Actions automatically"

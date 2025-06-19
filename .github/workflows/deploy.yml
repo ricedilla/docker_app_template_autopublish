@@ -134,4 +134,3 @@ jobs:
           echo "📱 App available at: https://${{ steps.config.outputs.host }}"
           echo "🐳 Container: ${{ steps.names.outputs.container_name }}"
           echo "🏷️  Image: ${{ steps.names.outputs.docker_image }}"
-# Updated Thu Jun 19 04:42:30 EEST 2025
